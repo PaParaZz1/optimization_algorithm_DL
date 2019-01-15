@@ -41,6 +41,8 @@ def train(train_dataloader, dev_dataloader, model, optimizer, lr_scheduler, args
     log_f_name = '%s/log.txt' % (args.output_dir)
     log_f = open(log_f_name, "w")
 
+    list_loss = []
+    list_accuracy = []
     for epoch in range(args.epoch):
         #lr_scheduler.step()
         count = 0
@@ -63,11 +65,17 @@ def train(train_dataloader, dev_dataloader, model, optimizer, lr_scheduler, args
             total_loss += loss.item()
             total_accuracy += correct * 1.0 / cur_length
             print('[epoch%d: batch%d], train loss: %f, accuracy: %f' % (epoch, idx, loss.item(), correct * 1.0 / cur_length))
+        list_loss.append(total_loss/count)
+        list_accuracy.append(total_accuracy/count)
         print('[epoch%d], avg train loss: %f, avg accuracy: %f' % (epoch, total_loss/count, total_accuracy/count), file=log_f)
         print('[epoch%d], avg train loss: %f, avg accuracy: %f' % (epoch, total_loss/count, total_accuracy/count))
 
         if epoch % 10 == 0:
             torch.save(model.state_dict(), "%s/epoch_%d.pth" % (args.output_dir, epoch))
+    list_loss_np = np.array(list_loss)
+    list_accuracy_np = np.array(list_accuracy)
+    np.save('%s/loss' % (args.output_dir), list_loss_np)
+    np.save('%s/accuracy' % (args.output_dir), list_accuracy_np)
     log_f.close()
 
 
@@ -135,7 +143,7 @@ if __name__ == "__main__":
     parser.add_argument('--load_path', default=None, type=str)
     parser.add_argument('--recover', default=False, type=bool)
     parser.add_argument('--epoch', default=100, type=int)
-    parser.add_argument('--optim', default='SGD', type=str)
+    parser.add_argument('--optim', default='RMSprop', type=str)
     parser.add_argument('--lr', default=1e-3, type=float)
     parser.add_argument('--weight_decay', default=1e-5, type=float)
     parser.add_argument('--batch_size', default=16, type=int)
@@ -143,7 +151,7 @@ if __name__ == "__main__":
     parser.add_argument('--num_workers', default=2, type=int)
     parser.add_argument('--evaluate', default=False, type=bool)
     parser.add_argument('--loss_function', default='CrossEntropy', type=str)
-    parser.add_argument('--output_dir', default='./experiment/SGD', type=str)
+    parser.add_argument('--output_dir', default='./experiment/RMSprop', type=str)
 
     args = parser.parse_args()
     if not os.path.exists(args.output_dir):
