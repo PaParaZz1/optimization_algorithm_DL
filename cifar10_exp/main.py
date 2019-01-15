@@ -43,6 +43,9 @@ def train(train_dataloader, dev_dataloader, model, optimizer, lr_scheduler, args
 
     for epoch in range(args.epoch):
         #lr_scheduler.step()
+        count = 0
+        total_loss = 0.0
+        total_accuracy = 0.0
         for idx, data in enumerate(train_dataloader):
             feature, label = data
             feature, label = feature.cuda(), label.cuda()
@@ -56,13 +59,16 @@ def train(train_dataloader, dev_dataloader, model, optimizer, lr_scheduler, args
 
             output_choice = output.data.max(dim=1)[1]
             correct = output_choice.eq(label).sum().cpu().numpy()
+            count += 1
+            total_loss += loss.item()
+            total_accuracy += correct * 1.0 / cur_length
             print('[epoch%d: batch%d], train loss: %f, accuracy: %f' % (epoch, idx, loss.item(), correct * 1.0 / cur_length))
-            print('[epoch%d: batch%d], train loss: %f, accuracy: %f' % (epoch, idx, loss.item(), correct * 1.0 / cur_length), file=log_f)
-
+        print('[epoch%d], avg train loss: %f, avg accuracy: %f' % (epoch, total_loss/count, total_accuracy/count), file=log_f)
+        print('[epoch%d], avg train loss: %f, avg accuracy: %f' % (epoch, total_loss/count, total_accuracy/count))
 
         if epoch % 10 == 0:
             torch.save(model.state_dict(), "%s/epoch_%d.pth" % (args.output_dir, epoch))
-
+    log_f.close()
 
 
 def validate(test_dataloader, model):
